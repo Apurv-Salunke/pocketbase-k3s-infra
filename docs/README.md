@@ -13,11 +13,11 @@ This folder contains comprehensive documentation for deploying our production ba
 
 ### Phase 2: Kubernetes Resource Definition
 
-1. Namespace Creation (Coming soon)
-2. Deployment Manifests (Coming soon)
-3. Service Definitions (Coming soon)
-4. Ingress Configuration (Coming soon)
-5. ConfigMaps and Secrets (Coming soon)
+1. [Namespace Creation](05-namespace-creation.md)
+2. [Deployment Manifests](06-deployment-manifests.md)
+3. [Service Definitions](07-service-definitions.md)
+4. [Ingress Configuration](08-ingress-configuration.md)
+5. [ConfigMaps and Secrets](09-configmaps-secrets.md)
 
 ### Phase 3: CI/CD Integration
 
