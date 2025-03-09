@@ -1,0 +1,79 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  repo: https://prometheus-community.github.io/helm-charts
+  chart: kube-prometheus-stack
+  version: 51.5.1
+  targetNamespace: monitoring
+  valuesContent: |-
+    prometheus:
+      prometheusSpec:
+        retention: 15d
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-path
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 50Gi
+        serviceMonitorSelector:
+          matchLabels:
+            monitoring: prometheus
+
+    grafana:
+      persistence:
+        enabled: true
+        size: 10Gi
+      adminPassword: "${GRAFANA_PASSWORD}"
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+          - name: 'default'
+            orgId: 1
+            folder: ''
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards
+      dashboards:
+        default:
+          app-dashboard:
+            file: dashboards/app-dashboard.json
+          system-dashboard:
+            file: dashboards/system-dashboard.json
+
+    alertmanager:
+      config:
+        global:
+          resolve_timeout: 5m
+        route:
+          group_by: ['job']
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 12h
+          receiver: 'slack'
+        receivers:
+        - name: 'slack'
+          slack_configs:
+          - api_url: "${SLACK_WEBHOOK_URL}"
+            channel: '#alerts'
+            send_resolved: true
+
+    nodeExporter:
+      enabled: true
+
+    kubeStateMetrics:
+      enabled: true 
