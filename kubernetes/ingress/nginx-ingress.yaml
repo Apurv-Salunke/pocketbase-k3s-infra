@@ -1,0 +1,65 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: ingress-nginx
+  namespace: kube-system
+spec:
+  repo: https://kubernetes.github.io/ingress-nginx
+  chart: ingress-nginx
+  version: 4.8.3
+  targetNamespace: ingress-nginx
+  valuesContent: |-
+    controller:
+      kind: DaemonSet
+      service:
+        enabled: true
+        type: LoadBalancer
+      config:
+        use-forwarded-headers: "true"
+        proxy-buffer-size: "16k"
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  namespace: backend
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: api.yourdomain.com
+    http:
+      paths:
+      - path: /api/import-trades
+        pathType: Prefix
+        backend:
+          service:
+            name: helper-server
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: go-server
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - api.yourdomain.com
+    secretName: tls-secret 

@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-server
+  namespace: backend
+  labels:
+    app: go-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: go-server
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: go-server
+    spec:
+      containers:
+      - name: go-server
+        image: your-registry/go-server:latest
+        ports:
+        - containerPort: 9000
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - name: data
+          mountPath: /app/pb_data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: go-server-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-server
+  namespace: backend
+spec:
+  selector:
+    app: go-server
+  ports:
+  - port: 80
+    targetPort: 9000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: go-server-data
+  namespace: backend
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: local-path 

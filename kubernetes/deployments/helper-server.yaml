@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helper-server
+  namespace: backend
+  labels:
+    app: helper-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: helper-server
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: helper-server
+    spec:
+      containers:
+      - name: helper-server
+        image: your-registry/helper-server:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        env:
+        - name: MAIN_SERVER_URL
+          value: "http://go-server"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: helper-server
+  namespace: backend
+spec:
+  selector:
+    app: helper-server
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP 
