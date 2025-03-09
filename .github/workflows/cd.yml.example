@@ -1,0 +1,82 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  CLUSTER_NAME: production
+  NAMESPACE: backend
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Setup kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > kubeconfig
+          export KUBECONFIG=./kubeconfig
+          chmod 600 ./kubeconfig
+
+      - name: Update deployments
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Update Go Server deployment
+          kubectl set image deployment/go-server \
+            go-server=$ECR_REGISTRY/go-server:$IMAGE_TAG \
+            -n $NAMESPACE
+
+          # Update Helper Server deployment
+          kubectl set image deployment/helper-server \
+            helper-server=$ECR_REGISTRY/helper-server:$IMAGE_TAG \
+            -n $NAMESPACE
+
+      - name: Verify deployments
+        run: |
+          kubectl rollout status deployment/go-server -n $NAMESPACE
+          kubectl rollout status deployment/helper-server -n $NAMESPACE
+
+      - name: Run smoke tests
+        run: |
+          # Wait for services to be ready
+          sleep 30
+
+          # Test Go Server health
+          GO_SERVER_URL=$(kubectl get svc -n $NAMESPACE go-server -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          curl -f http://$GO_SERVER_URL/health || exit 1
+
+          # Test Helper Server health
+          HELPER_SERVER_URL=$(kubectl get svc -n $NAMESPACE helper-server -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          curl -f http://$HELPER_SERVER_URL/health || exit 1
+
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} 
