@@ -7,9 +7,9 @@ This folder contains comprehensive documentation for deploying our production ba
 ### Phase 1: Infrastructure Setup
 
 1. [EC2 Instance Provisioning](01-ec2-instance-provisioning.md)
-2. K3s Installation (Coming soon)
-3. Storage Configuration (Coming soon)
-4. Networking Setup (Coming soon)
+2. [K3s Installation](02-k3s-installation.md)
+3. [Storage Configuration](03-storage-configuration.md)
+4. [Networking Setup](04-networking-setup.md)
 
 ### Phase 2: Kubernetes Resource Definition
 
