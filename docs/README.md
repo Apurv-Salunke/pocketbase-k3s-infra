@@ -21,8 +21,8 @@ This folder contains comprehensive documentation for deploying our production ba
 
 ### Phase 3: CI/CD Integration
 
-1. ECR Integration (Coming soon)
-2. Deployment Automation (Coming soon)
+1. [ECR Integration](10-ecr-integration.md)
+2. [Deployment Automation](11-deployment-automation.md)
 
 ### Phase 4: Monitoring and Maintenance
 
