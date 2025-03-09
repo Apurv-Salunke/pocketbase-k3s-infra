@@ -26,9 +26,9 @@ This folder contains comprehensive documentation for deploying our production ba
 
 ### Phase 4: Monitoring and Maintenance
 
-1. Monitoring Setup (Coming soon)
-2. Backup Strategy (Coming soon)
-3. Update Strategy (Coming soon)
+1. [Monitoring Setup](12-monitoring-setup.md)
+2. [Backup Strategy](13-backup-strategy.md)
+3. [Update Strategy](14-update-strategy.md)
 
 ## Reference Architecture
 
